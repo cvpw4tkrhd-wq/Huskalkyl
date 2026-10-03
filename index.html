@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Huskalkyl</title>
+<style>
+:root{
+  --bg:#F3F5F2;--surface:#FFFFFF;--ink:#17231F;--muted:#5B6B65;--line:#D8DFDA;
+  --accent:#2B5C7A;--accent-ink:#FFFFFF;--warn:#9A5B0C;--warn-bg:#FBF1DF;--ok:#256B49;--ok-bg:#E3F2EA;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101714;--surface:#18221E;--ink:#E8EFEA;--muted:#9AABA3;--line:#2A3833;
+    --accent:#6FB0D4;--accent-ink:#0B1A22;--warn:#E8AE55;--warn-bg:#3A2C14;--ok:#6CCB9A;--ok-bg:#16301F;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101714;--surface:#18221E;--ink:#E8EFEA;--muted:#9AABA3;--line:#2A3833;
+  --accent:#6FB0D4;--accent-ink:#0B1A22;--warn:#E8AE55;--warn-bg:#3A2C14;--ok:#6CCB9A;--ok-bg:#16301F;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Avenir Next","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px;line-height:1.45}
+main{max-width:640px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.1rem;font-weight:600;margin:0 0 14px;color:var(--muted);letter-spacing:.01em}
+h2{font-size:1.05rem;margin:28px 0 10px;font-weight:650}
+.hero{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 16px 16px}
+.hero .big{font-size:2.6rem;font-weight:700;line-height:1.05;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.hero .lbl{color:var(--muted);font-size:.92rem;margin-bottom:4px}
+.hero .sub{color:var(--muted);font-size:.92rem;margin-top:6px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--bg);padding:4px;border-radius:10px;margin-bottom:16px}
+.seg.two{grid-template-columns:1fr 1fr}
+.seg button{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;padding:9px 0;border-radius:7px;cursor:pointer}
+.seg button[aria-pressed="true"],.seg button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs{background:var(--surface);border:1px solid var(--line);margin-bottom:16px}
+.seg button:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible,.reset:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bar{display:flex;height:16px;border-radius:8px;overflow:hidden;margin:16px 0 12px;background:var(--line)}
+.bar span{display:block;height:100%;min-width:2px}
+.legend{display:grid;gap:6px}
+.legend div{display:flex;align-items:center;gap:8px;font-size:.92rem}
+.legend i{width:11px;height:11px;border-radius:3px;flex:none}
+.legend b{margin-left:auto;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.legend em{font-style:normal;color:var(--muted);font-variant-numeric:tabular-nums;min-width:3.2em;text-align:right}
+details.cat{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden}
+details.cat summary{list-style:none;display:flex;align-items:center;gap:10px;padding:14px;cursor:pointer;font-weight:600}
+details.cat summary::-webkit-details-marker{display:none}
+details.cat summary i{width:6px;align-self:stretch;border-radius:3px;flex:none}
+details.cat summary .nm{flex:1}
+details.cat summary .sum{font-variant-numeric:tabular-nums;white-space:nowrap}
+details.cat summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:0 4px 3px 4px;transition:transform .15s}
+details.cat[open] summary::after{transform:rotate(-135deg);margin-bottom:-3px}
+.items{padding:0 14px 8px;border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:1fr 130px;gap:10px;align-items:center;padding:9px 0}
+.row + .row{border-top:1px solid var(--line)}
+.row label{font-size:.95rem}
+.row small{display:block;color:var(--muted);font-size:.78rem;line-height:1.3}
+input[type=number],input[type=text],select{width:100%;font:inherit;font-variant-numeric:tabular-nums;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+input[type=number],input[data-num]{text-align:right}
+.seg.five{grid-template-columns:repeat(5,1fr)}
+.seg.five button{padding:9px 2px;font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+tr[data-hi]{cursor:pointer}
+tr[data-hi][aria-current="true"] td{font-weight:700}
+table.cmp{font-size:.85rem}
+details.cat.shared{margin-bottom:14px}
+input[type=checkbox]{justify-self:end;width:24px;height:24px;margin:0;accent-color:var(--accent)}
+input[readonly]{opacity:.7}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px 14px 8px}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:9px 0;font-variant-numeric:tabular-nums}
+.kv + .kv,.row + .kv,.kv + .row{border-top:1px solid var(--line)}
+.kv span:first-child{color:var(--muted)}
+.kv b{font-weight:650;text-align:right}
+.kv.strong span:first-child{color:var(--ink);font-weight:650}
+.notice{border-radius:10px;padding:11px 13px;font-size:.92rem;margin:10px 0}
+.notice.ok{background:var(--ok-bg);color:var(--ok)}
+.notice.warn{background:var(--warn-bg);color:var(--warn)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:.92rem}
+th,td{padding:9px 4px;text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:500;font-size:.82rem}
+tr + tr td{border-top:1px solid var(--line)}
+td.total{font-weight:700}
+.foot{color:var(--muted);font-size:.82rem;margin-top:22px}
+.reset{margin-top:14px;background:transparent;border:1px solid var(--line);color:var(--muted);font:inherit;padding:9px 14px;border-radius:8px;cursor:pointer}
+@media (prefers-reduced-motion:reduce){details.cat summary::after{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Huskalkyl</h1>
+
+  <div class="seg two tabs" role="tablist" aria-label="Huvudflikar">
+    <button role="tab" id="tabBtn-cur" data-tab="cur" aria-selected="false">Nuvarande boende</button>
+    <button role="tab" id="tabBtn-new" data-tab="new" aria-selected="true">Nya hus</button>
+  </div>
+
+  <!-- ===== Nivå 1: Nuvarande boende ===== -->
+  <div id="tab-cur" role="tabpanel" aria-labelledby="tabBtn-cur" hidden>
+    <section class="hero" aria-label="Behållning efter försäljning">
+      <div class="lbl">Behållning efter försäljning</div>
+      <div class="big" id="curNet">0 kr</div>
+      <div class="sub" id="curNetSub"></div>
+    </section>
+    <div id="curHint"></div>
+
+    <h2>Boendeform</h2>
+    <div class="card" id="curType"></div>
+
+    <h2>Köp och värde</h2>
+    <div class="card" id="curBuy"></div>
+
+    <h2>Lån</h2>
+    <div class="card" id="curLoan"></div>
+
+    <h2>Månadskostnad</h2>
+    <div class="card" id="curMonthIn"></div>
+    <div class="card" id="curMonthOut" style="margin-top:8px"></div>
+
+    <h2>Försäljning</h2>
+    <div class="card" id="curSaleIn"></div>
+    <div class="card" id="curSaleOut" style="margin-top:8px"></div>
+    <div id="curNotice"></div>
+  </div>
+
+  <!-- ===== Nivå 1: Nya hus (5 kalkyler) ===== -->
+  <div id="tab-new" role="tabpanel" aria-labelledby="tabBtn-new">
+
+    <details class="cat shared" id="sharedBox">
+      <summary><i style="background:#2B5C7A"></i><span class="nm">Gemensamt för alla hus</span><span class="sum" id="sharedSum"></span></summary>
+      <div class="items" id="sharedInputs"></div>
+    </details>
+
+    <div class="seg five" id="hsel" role="tablist" aria-label="Välj kalkyl"></div>
+
+    <div id="housePanel">
+      <div class="card" style="margin-bottom:12px">
+        <div class="row">
+          <label for="hname">Namn på kalkylen</label>
+          <input type="text" id="hname" maxlength="24" autocomplete="off">
+        </div>
+      </div>
+
+      <section class="hero" aria-label="Totalkostnad">
+        <div class="seg" id="seg" role="group" aria-label="Scenario">
+          <button data-s="0" aria-pressed="false">Låg</button>
+          <button data-s="1" aria-pressed="true">Rimlig</button>
+          <button data-s="2" aria-pressed="false">Hög</button>
+        </div>
+        <div class="lbl" id="totalLbl">Totalkostnad</div>
+        <div class="big" id="total">0 kr</div>
+        <div class="sub" id="totalSub"></div>
+        <div class="bar" id="bar" aria-hidden="true"></div>
+        <div class="legend" id="legend"></div>
+      </section>
+
+      <h2>Kostnader per kategori</h2>
+      <div id="cats"></div>
+
+      <h2>Kontantinsats</h2>
+      <div class="card" id="potCard"></div>
+      <div class="card" id="finInputs" style="margin-top:8px"></div>
+      <div id="saleHint"></div>
+      <div id="check"></div>
+
+      <h2>Finansiering</h2>
+      <div class="card" id="finOut"></div>
+
+      <h2>Månadskostnad</h2>
+      <div class="card" id="monthIn"></div>
+      <div class="card" style="margin-top:8px"><table id="monthTbl"></table></div>
+      <div id="monthNote"></div>
+      <div id="compare"></div>
+    </div>
+
+    <h2>Jämförelse av alla kalkyler</h2>
+    <div class="card"><table class="cmp" id="cmpTbl"></table></div>
+    <p class="foot">Tryck på en rad för att öppna kalkylen. Lån och månadskostnad räknas med varje kalkyls kontantinsats och den gemensamma räntan.</p>
+  </div>
+
+  <button class="reset" id="reset">Återställ alla värden</button>
+  <p class="foot">Grova uppskattningar för Västra Götaland och Halland. Ändra siffrorna efter offerter från husleverantör, kommun och bank. Allt sparas i din webbläsare. Skatteberäkningen är förenklad och ersätter inte Skatteverkets regler.</p>
+</main>
+
+<script>
+(function(){
+  var KEY = 'huskalkyl-v1';
+  var NH = 5;
+  var SC = ['Låg','Rimlig','Hög'];
+
+  var CATS = [
+    {id:'kop', name:'Tomt och köp', color:'#2B5C7A', items:[
+      {id:'tomt', name:'Tomt', v:[2000000,2000000,2000000]},
+      {id:'lagfart', name:'Lagfart', note:'1,5 % av tomtpriset + 825 kr', auto:true, v:[0,0,0]},
+      {id:'pantbrev', name:'Pantbrev', note:'2 % av nya pantbrev vid lån', v:[60000,80000,100000]}
+    ]},
+    {id:'hus', name:'Hus', color:'#4F7F6A', items:[
+      {id:'hus', name:'Nyckelfärdigt hus', v:[2500000,2500000,2500000]},
+      {id:'vitvaror', name:'Vitvaror som inte ingår', v:[40000,80000,120000]}
+    ]},
+    {id:'mark', name:'Mark och anslutningar', color:'#8A7A3E', items:[
+      {id:'markarbete', name:'Markarbeten och grund utöver avtal', note:'Berg, lera och sluttning driver kostnaden', v:[100000,250000,400000]},
+      {id:'va', name:'Vatten och avlopp', note:'Kommunalt ca 100–250 tkr, enskilt ca 150–300 tkr', v:[100000,200000,300000]},
+      {id:'elfiber', name:'El och fiber', v:[40000,90000,150000]},
+      {id:'uppfart', name:'Uppfart, dränering, utfyllnad', v:[50000,100000,150000]}
+    ]},
+    {id:'myn', name:'Myndighet och projektering', color:'#6B5B8C', items:[
+      {id:'bygglov', name:'Bygglov, kontrollansvarig, kartor, utstakning', v:[60000,100000,150000]}
+    ]},
+    {id:'bygg', name:'Under byggtiden', color:'#3F8F9B', items:[
+      {id:'forsakring', name:'Byggfelsförsäkring och byggherreförsäkring', v:[20000,35000,50000]},
+      {id:'byggranta', name:'Ränta under byggtiden', note:'Ränta på utbetalda delar, ofta 12–18 månader', v:[50000,100000,150000]}
+    ]},
+    {id:'inflytt', name:'Inflytt', color:'#7C8C3A', items:[
+      {id:'belysning', name:'Belysning, gardinstänger, småfix', v:[30000,60000,100000]},
+      {id:'besiktning', name:'Besiktning och energideklaration', v:[10000,15000,20000]}
+    ]},
+    {id:'buffert', name:'Buffert', color:'#7E8A96', items:[
+      {id:'buffert', name:'Oförutsett och tillval', note:'Ca 10 % av huspriset', v:[150000,250000,375000]}
+    ]}
+  ];
+
+  /* Gemensamma och nuvarande boende. Lagras i S.p, ids "p-..." */
+  var PARAMS = [
+    {id:'brutto', label:'Hushållets bruttoinkomst per månad', unit:'kr', def:0, sec:'sharedInputs'},
+    {id:'netto', label:'Hushållets nettoinkomst per månad', unit:'kr', def:0, sec:'sharedInputs'},
+    {id:'levnad', label:'Övriga levnadskostnader per månad', unit:'kr', def:17500, sec:'sharedInputs'},
+    {id:'ranta', label:'Boränta på nytt lån', unit:'%', def:4.5, step:0.1, sec:'sharedInputs'},
+    {id:'kalkylranta', label:'Bankens kalkylränta', unit:'%', def:7, step:0.1, sec:'sharedInputs'},
+    {id:'sparande', label:'Övrigt sparande', unit:'kr', def:0, sec:'sharedInputs',
+      note:'Läggs till behållningen från nuvarande boende'},
+
+    {id:'c_kop', label:'Köpepris', unit:'kr', def:0, sec:'curBuy'},
+    {id:'c_forb', label:'Förbättringsutgifter', unit:'kr', def:0, sec:'curBuy',
+      note:'Det du lagt på renoveringar och tillbyggnader. Spara kvitton.'},
+    {id:'c_salj', label:'Uppskattat säljpris', unit:'kr', def:0, sec:'curBuy'},
+
+    {id:'c_lan', label:'Kvarvarande lån', unit:'kr', def:0, sec:'curLoan'},
+    {id:'c_ranta', label:'Ränta', unit:'%', def:4.5, step:0.1, sec:'curLoan'},
+    {id:'c_amort', label:'Amortering per månad', unit:'kr', def:0, step:100, sec:'curLoan'},
+
+    {id:'c_avgift', label:'Månadsavgift till föreningen', unit:'kr', def:0, step:100, sec:'curMonthIn', own:'br'},
+    {id:'c_fastavg', label:'Fastighetsavgift per år', unit:'kr', def:0, sec:'curMonthIn', own:'villa'},
+    {id:'c_drift', label:'Drift per månad', unit:'kr', def:0, step:100, sec:'curMonthIn',
+      note:'El, värme, vatten, hemförsäkring och underhåll som inte ingår i avgiften'},
+
+    {id:'c_maklar', label:'Mäklararvode', unit:'%', def:2.5, step:0.1, sec:'curSaleIn', note:'Av säljpriset'},
+    {id:'c_ovrigt', label:'Homestyling, foto och annat vid försäljning', unit:'kr', def:0, sec:'curSaleIn',
+      note:'Dras av från vinsten'},
+    {id:'c_flytt', label:'Flytt och städ', unit:'kr', def:0, sec:'curSaleIn',
+      note:'Minskar behållningen men dras inte av från vinsten'},
+    {id:'c_skatt', label:'Skatt på vinsten', unit:'%', def:22, step:0.1, sec:'curSaleIn'}
+  ];
+
+  /* Per hus. Lagras i houses[i].hp, ids "hp-..." */
+  var HPARAMS = [
+    {id:'useSale', label:'Använd potentiell kontantinsats', type:'check', def:0, sec:'finInputs',
+      note:'Behållning från nuvarande boende plus sparande'},
+    {id:'kontant', label:'Kontantinsats', unit:'kr', def:0, sec:'finInputs'},
+    {id:'varderng', label:'Bankens värdering av färdigt hus och tomt', unit:'kr', def:5000000, sec:'finInputs',
+      note:'Banken utgår från marknadsvärdet, inte byggkostnaden'},
+    {id:'drift', label:'Drift per månad', unit:'kr', def:6500, sec:'monthIn',
+      note:'El, värme, vatten, sopor, försäkring, underhåll'},
+    {id:'fastavg', label:'Fastighetsavgift per år', unit:'kr', def:10000, sec:'monthIn'}
+  ];
+
+  function newHouse(i){
+    var h = {name:'Hus ' + (i+1), scen:1, open:{}, items:{}, hp:{}};
+    CATS.forEach(function(c){ c.items.forEach(function(it){ h.items[it.id] = it.v.slice(); }); });
+    HPARAMS.forEach(function(p){ h.hp[p.id] = p.def; });
+    return h;
+  }
+  function defaults(){
+    var s = {top:'new', hi:0, own:'br', openShared:false, p:{}, houses:[]};
+    PARAMS.forEach(function(p){ s.p[p.id] = p.def; });
+    for (var i = 0; i < NH; i++) s.houses.push(newHouse(i));
+    return s;
+  }
+
+  function loadHouse(h, src, hpSrc){
+    if (!src || typeof src !== 'object') return;
+    if (typeof src.name === 'string' && src.name.trim()) h.name = src.name.slice(0, 24);
+    if (typeof src.scen === 'number' && src.scen >= 0 && src.scen <= 2) h.scen = src.scen;
+    if (src.open && typeof src.open === 'object') h.open = src.open;
+    if (src.items) Object.keys(h.items).forEach(function(k){ if (src.items[k] && src.items[k].length === 3) h.items[k] = src.items[k]; });
+    if (hpSrc) Object.keys(h.hp).forEach(function(k){ if (typeof hpSrc[k] === 'number') h.hp[k] = hpSrc[k]; });
+  }
+
+  var S = defaults();
+  try {
+    var raw = localStorage.getItem(KEY);
+    if (raw) {
+      var saved = JSON.parse(raw);
+      if (saved && typeof saved === 'object') {
+        if (saved.top === 'new' || saved.top === 'cur') S.top = saved.top;
+        else if (saved.tab === 'new' || saved.tab === 'cur') S.top = saved.tab;
+        if (typeof saved.hi === 'number' && saved.hi >= 0 && saved.hi < NH) S.hi = saved.hi;
+        if (saved.own === 'br' || saved.own === 'villa') S.own = saved.own;
+        if (typeof saved.openShared === 'boolean') S.openShared = saved.openShared;
+        if (saved.p) Object.keys(S.p).forEach(function(k){ if (typeof saved.p[k] === 'number') S.p[k] = saved.p[k]; });
+        if (saved.houses && saved.houses.length) {
+          for (var i = 0; i < NH; i++) if (saved.houses[i]) loadHouse(S.houses[i], saved.houses[i], saved.houses[i].hp);
+        } else if (saved.items) {
+          /* äldre version med en enda kalkyl flyttas till Hus 1 */
+          loadHouse(S.houses[0], {scen:saved.scen, open:saved.open, items:saved.items}, saved.p);
+        }
+      }
+    }
+  } catch(e) {}
+
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
+  function H(){ return S.houses[S.hi]; }
+
+  function $(id){ return document.getElementById(id); }
+  var NB = '\u00A0';
+  function groupInt(s){ return s.replace(/\B(?=(\d{3})+(?!\d))/g, NB); }
+  function fmt(n){
+    var r = Math.round(n), neg = r < 0;
+    return (neg ? '\u2212' : '') + groupInt(String(Math.abs(r))) + NB + 'kr';
+  }
+  /* Värde till inmatningsfält: tretalsgrupper och decimalkomma */
+  function numStr(v, dec){
+    if (dec) {
+      var t = String(Math.round(v * 100) / 100).split('.');
+      return groupInt(t[0]) + (t[1] ? ',' + t[1] : '');
+    }
+    return groupInt(String(Math.round(v)));
+  }
+  function fmtField(str, dec){
+    var s = String(str).replace(/[^\d,.]/g, '').replace(/\./g, ',');
+    var parts = s.split(',');
+    var ip = parts[0].replace(/^0+(?=\d)/, '');
+    var out = groupInt(ip);
+    if (dec && parts.length > 1) out += ',' + parts.slice(1).join('').slice(0, 2);
+    return out;
+  }
+  function parseNum(str){
+    var v = parseFloat(String(str).replace(/[\s\u00A0]/g, '').replace(',', '.'));
+    return isNaN(v) ? 0 : Math.max(0, v);
+  }
+  function reformat(el){
+    var dec = el.dataset.dec === '1';
+    var pos = el.selectionStart == null ? el.value.length : el.selectionStart;
+    var sig = el.value.slice(0, pos).replace(/[^\d,.]/g, '').length;
+    var f = fmtField(el.value, dec);
+    if (f === el.value) return;
+    el.value = f;
+    var cnt = 0, np = 0;
+    while (np < f.length && cnt < sig) { if (/[\d,]/.test(f.charAt(np))) cnt++; np++; }
+    try { el.setSelectionRange(np, np); } catch(e) {}
+  }
+  function mkr(n){ return (n/1e6).toFixed(2).replace('.',',') + ' mkr'; }
+  function pct(n){ return (n*100).toFixed(0) + ' %'; }
+  function fnum(n){ return String(n).replace('.', ','); }
+  function esc(t){ return String(t).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function kv(a,b,cls){ return '<div class="kv'+(cls?' '+cls:'')+'"><span>'+a+'</span><b>'+b+'</b></div>'; }
+  function tr(a,b,c){ return '<tr><td>'+a+'</td><td>'+fmt(b)+'</td><td>'+fmt(c)+'</td></tr>'; }
+
+  function itemVal(it, h){
+    if (it.auto) return Math.round(h.items.tomt[h.scen] * 0.015 + 825);
+    return h.items[it.id][h.scen];
+  }
+
+  /* ---------- bygg statisk markup ---------- */
+  function buildCats(){
+    var h = H();
+    var html = '';
+    CATS.forEach(function(c){
+      html += '<details class="cat" data-cat="'+c.id+'"'+(h.open[c.id]?' open':'')+'>' +
+        '<summary><i style="background:'+c.color+'"></i><span class="nm">'+c.name+'</span><span class="sum" id="sub-'+c.id+'"></span></summary>' +
+        '<div class="items">';
+      c.items.forEach(function(it){
+        html += '<div class="row"><label for="it-'+it.id+'">'+it.name+(it.note?'<small>'+it.note+'</small>':'')+'</label>' +
+          '<input type="text" inputmode="numeric" autocomplete="off" data-num="1" id="it-'+it.id+'" data-item="'+it.id+'"'+(it.auto?' readonly':'')+'></div>';
+      });
+      html += '</div></details>';
+    });
+    $('cats').innerHTML = html;
+    CATS.forEach(function(c){
+      var d = document.querySelector('details[data-cat="'+c.id+'"]');
+      d.addEventListener('toggle', function(){ H().open[c.id] = d.open; save(); });
+    });
+  }
+
+  function paramRow(p, prefix, attr){
+    var id = prefix + p.id;
+    var lab = '<label for="'+id+'">'+p.label+(p.note?'<small>'+p.note+'</small>':'')+'</label>';
+    var inp = p.type === 'check'
+      ? '<input type="checkbox" id="'+id+'" '+attr+'="'+p.id+'">'
+      : '<input type="text" inputmode="'+(p.unit==='%'?'decimal':'numeric')+'" autocomplete="off" data-num="1"'+(p.unit==='%'?' data-dec="1"':'')+' id="'+id+'" '+attr+'="'+p.id+'" aria-label="'+p.label+' ('+p.unit+')">';
+    return '<div class="row" id="row-'+id+'">'+lab+inp+'</div>';
+  }
+  function buildParams(){
+    var groups = {};
+    PARAMS.forEach(function(p){ (groups[p.sec] = groups[p.sec] || []).push(paramRow(p, 'p-', 'data-param')); });
+    HPARAMS.forEach(function(p){ (groups[p.sec] = groups[p.sec] || []).push(paramRow(p, 'hp-', 'data-hp')); });
+    Object.keys(groups).forEach(function(sec){ $(sec).innerHTML = groups[sec].join(''); });
+    $('curType').innerHTML =
+      '<div class="row"><label for="own">Typ av bostad</label>' +
+      '<select id="own"><option value="br">Bostadsrätt</option><option value="villa">Villa eller radhus</option></select></div>';
+  }
+
+  /* ---------- beräkningar ---------- */
+  function current(){
+    var P = S.p, br = S.own === 'br';
+    var interestM = P.c_lan * P.c_ranta / 100 / 12;
+    var amortM = P.c_amort;
+    var feeM = br ? P.c_avgift : P.c_fastavg / 12;
+    var runM = P.c_drift;
+    var total = interestM + amortM + feeM + runM;
+    var iy = interestM * 12;
+    var dedY = iy <= 100000 ? iy * 0.30 : 30000 + (iy - 100000) * 0.21;
+    var dedM = dedY / 12;
+
+    var broker = P.c_salj * P.c_maklar / 100;
+    var sellCosts = broker + P.c_ovrigt;
+    var basis = P.c_kop + P.c_forb;
+    var gain = P.c_salj - basis - sellCosts;
+    var tax = gain > 0 ? gain * P.c_skatt / 100 : 0;
+    var lossRelief = gain < 0 ? -gain * 0.5 * 0.30 : 0;
+    var net = P.c_salj - sellCosts - P.c_lan - tax + lossRelief - P.c_flytt;
+    return {br:br, interestM:interestM, amortM:amortM, feeM:feeM, runM:runM, total:total, dedM:dedM,
+      broker:broker, sellCosts:sellCosts, basis:basis, gain:gain, tax:tax, lossRelief:lossRelief, net:net,
+      pot: Math.max(0, net) + P.sparande};
+  }
+
+  function monthly(h, loan, rate, amorPct){
+    var interest = loan * rate / 100 / 12;
+    var amort = loan * amorPct / 100 / 12;
+    var run = h.hp.drift + h.hp.fastavg / 12;
+    return {interest:interest, amort:amort, run:run, total:interest+amort+run};
+  }
+
+  function computeHouse(h, cur){
+    var P = S.p;
+    var total = 0, subs = {};
+    CATS.forEach(function(c){
+      var s = 0; c.items.forEach(function(it){ s += itemVal(it, h); });
+      subs[c.id] = s; total += s;
+    });
+    var cash = h.hp.useSale ? cur.pot : h.hp.kontant;
+    var loan = Math.max(0, total - cash);
+    var val = Math.max(1, h.hp.varderng);
+    var ltv = loan / val;
+    var maxLoan = val * 0.85;
+    var income = Math.max(1, P.brutto * 12);
+    var dti = loan / income;
+    var amorPct = ltv > 0.7 ? 2 : (ltv > 0.5 ? 1 : 0);
+    if (dti > 4.5) amorPct += 1;
+    var m1 = monthly(h, loan, P.ranta, amorPct);
+    var m2 = monthly(h, loan, P.kalkylranta, amorPct);
+    return {total:total, subs:subs, cash:cash, loan:loan, ltv:ltv, maxLoan:maxLoan, dti:dti, amorPct:amorPct,
+      m1:m1, m2:m2, rest1:P.netto - m1.total - P.levnad, rest2:P.netto - m2.total - P.levnad};
+  }
+
+  /* ---------- rendera ---------- */
+  function syncInputs(cur, h, r){
+    CATS.forEach(function(c){ c.items.forEach(function(it){
+      var el = $('it-'+it.id);
+      if (document.activeElement !== el || it.auto) el.value = numStr(itemVal(it, h), false);
+    }); });
+    PARAMS.forEach(function(p){
+      var el = $('p-'+p.id);
+      if (document.activeElement !== el) el.value = numStr(S.p[p.id], p.unit === '%');
+      if (p.own) $('row-p-'+p.id).hidden = (S.own !== p.own);
+    });
+    HPARAMS.forEach(function(p){
+      var el = $('hp-'+p.id);
+      if (p.type === 'check') { el.checked = !!h.hp[p.id]; return; }
+      if (p.id === 'kontant') {
+        el.readOnly = !!h.hp.useSale;
+        el.value = numStr(h.hp.useSale ? r.cash : h.hp.kontant, false);
+        return;
+      }
+      if (document.activeElement !== el) el.value = numStr(h.hp[p.id], p.unit === '%');
+    });
+    $('own').value = S.own;
+    if (document.activeElement !== $('hname')) $('hname').value = h.name;
+  }
+
+  function renderHouseSel(){
+    var html = '';
+    S.houses.forEach(function(h, i){
+      html += '<button role="tab" data-hi="'+i+'" aria-selected="'+(i === S.hi)+'" title="'+esc(h.name)+'">'+esc(h.name)+'</button>';
+    });
+    $('hsel').innerHTML = html;
+  }
+
+  function updateHouse(cur){
+    var P = S.p, h = H(), r = computeHouse(h, cur), hp = h.hp;
+
+    document.querySelectorAll('#seg button').forEach(function(b){
+      b.setAttribute('aria-pressed', String(+b.dataset.s === h.scen));
+    });
+
+    $('totalLbl').textContent = 'Totalkostnad: ' + h.name;
+    $('total').textContent = fmt(r.total);
+    var plotHouse = h.items.tomt[h.scen] + h.items.hus[h.scen];
+    $('totalSub').textContent = 'Tomt och hus ' + mkr(plotHouse) + ', övriga kostnader ' + mkr(r.total - plotHouse) + ' (' + SC[h.scen].toLowerCase() + ' scenario)';
+
+    var bar = '', leg = '';
+    CATS.forEach(function(c){
+      var share = r.total > 0 ? r.subs[c.id] / r.total : 0;
+      bar += '<span style="width:'+(share*100)+'%;background:'+c.color+'"></span>';
+      leg += '<div><i style="background:'+c.color+'"></i><span>'+c.name+'</span><b>'+fmt(r.subs[c.id])+'</b><em>'+pct(share)+'</em></div>';
+      $('sub-'+c.id).textContent = fmt(r.subs[c.id]);
+    });
+    $('bar').innerHTML = bar;
+    $('legend').innerHTML = leg;
+
+    syncInputs(cur, h, r);
+
+    $('potCard').innerHTML =
+      kv('Behållning från nuvarande boende', fmt(Math.max(0, cur.net))) +
+      kv('Övrigt sparande', fmt(P.sparande)) +
+      kv('Potentiell kontantinsats', fmt(cur.pot), 'strong');
+
+    var hint = '';
+    if (hp.useSale && P.c_salj <= 0 && P.sparande <= 0) {
+      hint = '<div class="notice warn">Fyll i uppskattat säljpris under Nuvarande boende eller övrigt sparande, annars blir kontantinsatsen 0 kr.</div>';
+    } else if (!hp.useSale && cur.pot > 0 && cur.pot !== hp.kontant) {
+      hint = '<div class="notice ok">Potentiell kontantinsats är ' + fmt(cur.pot) + ', ' + (cur.pot > hp.kontant ? fmt(cur.pot - hp.kontant) + ' mer' : fmt(hp.kontant - cur.pot) + ' mindre') + ' än kontantinsatsen du har fyllt i här. Kryssa i rutan för att räkna med den.</div>';
+    }
+    $('saleHint').innerHTML = hint;
+
+    $('check').innerHTML = r.loan > r.maxLoan
+      ? '<div class="notice warn">Banken lånar sannolikt högst 85 % av värderingen, alltså ' + fmt(r.maxLoan) +
+        '. Lånet blir ' + fmt(r.loan) + ', så du behöver ca ' + fmt(r.loan - r.maxLoan) + ' mer i kontantinsats eller en högre värdering.</div>'
+      : '<div class="notice ok">Lånet ryms inom bankens 85-procentsgräns (' + fmt(r.maxLoan) + ').</div>';
+
+    $('finOut').innerHTML =
+      kv('Kontantinsats', fmt(r.cash)) +
+      kv('Lånebehov', fmt(r.loan)) +
+      kv('Kontantinsats av totalkostnad', pct(r.total>0 ? r.cash/r.total : 0)) +
+      kv('Belåningsgrad mot värdering', pct(r.ltv)) +
+      kv('Skuldkvot (lån / årsinkomst)', r.dti.toFixed(1).replace('.',',')) +
+      kv('Amorteringskrav per år', r.amorPct + ' % av lånet');
+
+    $('monthTbl').innerHTML =
+      '<tr><th></th><th>Din ränta ('+fnum(P.ranta)+' %)</th><th>Bankens ('+fnum(P.kalkylranta)+' %)</th></tr>' +
+      tr('Ränta', r.m1.interest, r.m2.interest) +
+      tr('Amortering', r.m1.amort, r.m2.amort) +
+      tr('Drift och fastighetsavgift', r.m1.run, r.m2.run) +
+      '<tr><td class="total">Boende totalt</td><td class="total">'+fmt(r.m1.total)+'</td><td class="total">'+fmt(r.m2.total)+'</td></tr>' +
+      tr('Kvar efter levnadskostnader', r.rest1, r.rest2);
+    $('monthNote').innerHTML = r.rest2 >= 0
+      ? '<div class="notice ok">Du har ' + fmt(r.rest2) + ' kvar per månad även med bankens kalkylränta.</div>'
+      : '<div class="notice warn">Med bankens kalkylränta går kalkylen back ' + fmt(-r.rest2) + ' per månad. Då är lånet för stort för din inkomst.</div>';
+
+    if (cur.total > 0) {
+      var diff = r.m1.total - cur.total;
+      $('compare').innerHTML = '<h2>Jämfört med nuvarande boende</h2><div class="card">' +
+        kv('Nuvarande boende per månad', fmt(cur.total)) +
+        kv(esc(h.name) + ' per månad', fmt(r.m1.total)) +
+        kv('Skillnad per månad', (diff >= 0 ? '+' : '') + fmt(diff), 'strong') +
+        '</div><p class="foot">Båda siffrorna är inklusive amortering och före ränteavdrag.</p>';
+    } else {
+      $('compare').innerHTML = '';
+    }
+  }
+
+  function updateCompare(cur){
+    var html = '<tr><th>Kalkyl</th><th>Totalt</th><th>Lån</th><th>Per mån</th></tr>';
+    S.houses.forEach(function(h, i){
+      var r = computeHouse(h, cur);
+      html += '<tr data-hi="'+i+'" tabindex="0"'+(i === S.hi ? ' aria-current="true"' : '')+'>' +
+        '<td>'+esc(h.name)+'</td><td>'+mkr(r.total)+'</td><td>'+mkr(r.loan)+'</td><td>'+fmt(r.m1.total)+'</td></tr>';
+    });
+    $('cmpTbl').innerHTML = html;
+  }
+
+  function updateCur(cur){
+    var P = S.p;
+    $('curNet').textContent = fmt(cur.net);
+    $('curNetSub').textContent = P.c_salj > 0 ? 'Säljpris ' + fmt(P.c_salj) + ' minus lån, kostnader och skatt' : '';
+    $('curHint').innerHTML = P.c_salj <= 0
+      ? '<div class="notice warn">Fyll i köpepris, säljpris och lån så räknas boendekostnad, vinstskatt och behållning ut. Behållningen används som potentiell kontantinsats i alla fem husen.</div>' : '';
+
+    $('curMonthOut').innerHTML =
+      kv('Ränta', fmt(cur.interestM)) +
+      kv('Amortering', fmt(cur.amortM)) +
+      kv(cur.br ? 'Månadsavgift' : 'Fastighetsavgift', fmt(cur.feeM)) +
+      kv('Drift', fmt(cur.runM)) +
+      kv('Boende totalt per månad', fmt(cur.total), 'strong') +
+      kv('Ränteavdrag (30 % upp till 100 000 kr per år)', '−' + fmt(cur.dedM)) +
+      kv('Totalt efter ränteavdrag', fmt(cur.total - cur.dedM), 'strong') +
+      kv('Varav utan amortering', fmt(cur.total - cur.dedM - cur.amortM));
+
+    var gainLabel = cur.gain >= 0 ? 'Vinst' : 'Förlust';
+    var saleKv =
+      kv('Säljpris', fmt(P.c_salj)) +
+      kv('Värdeförändring mot köpepris', (P.c_salj - P.c_kop >= 0 ? '+' : '') + fmt(P.c_salj - P.c_kop)) +
+      kv('Mäklararvode', '−' + fmt(cur.broker)) +
+      kv('Homestyling, foto och annat', '−' + fmt(P.c_ovrigt)) +
+      kv('Köpepris och förbättringar', fmt(cur.basis)) +
+      kv(gainLabel + ' att beskatta', fmt(Math.abs(cur.gain))) +
+      kv('Vinstskatt (' + fnum(P.c_skatt) + ' %)', '−' + fmt(cur.tax));
+    if (cur.gain < 0) saleKv += kv('Skattereduktion vid förlust (ca)', '+' + fmt(cur.lossRelief));
+    saleKv +=
+      kv('Kvarvarande lån', '−' + fmt(P.c_lan)) +
+      kv('Flytt och städ', '−' + fmt(P.c_flytt)) +
+      kv('Behållning efter försäljning', fmt(cur.net), 'strong');
+    $('curSaleOut').innerHTML = saleKv;
+
+    var notes = '';
+    if (P.c_salj > 0 && P.c_lan > 0) {
+      notes += '<div class="notice ok">Belåningsgrad på nuvarande boende vid försäljning: ' + pct(P.c_lan / P.c_salj) + '.</div>';
+    }
+    if (cur.gain > 0) {
+      notes += '<div class="notice warn">Skatten är beräknad utan uppskov. Köper du ny bostad kan du ansöka om uppskov hos Skatteverket och skjuta upp skatten, men då behöver vinsten och en uppskovsränta hanteras vid en senare försäljning.</div>';
+    }
+    $('curNotice').innerHTML = notes;
+  }
+
+  function update(){
+    var cur = current();
+    document.querySelectorAll('.tabs button').forEach(function(b){
+      b.setAttribute('aria-selected', String(b.dataset.tab === S.top));
+    });
+    $('tab-new').hidden = S.top !== 'new';
+    $('tab-cur').hidden = S.top !== 'cur';
+    $('sharedBox').open = S.openShared;
+    $('sharedSum').textContent = 'Kontantinsats ' + mkr(cur.pot);
+    if (document.activeElement && document.activeElement.id === 'hname') {
+      var b = $('hsel').querySelector('[data-hi="'+S.hi+'"]');
+      if (b) { b.textContent = H().name; b.title = H().name; }
+    } else {
+      renderHouseSel();
+    }
+    updateHouse(cur);
+    updateCompare(cur);
+    updateCur(cur);
+  }
+
+  /* ---------- händelser ---------- */
+  buildCats(); buildParams();
+
+  document.addEventListener('input', function(e){
+    var t = e.target;
+    if (!t || !t.matches) return;
+    if (t.dataset.num) reformat(t);
+    if (t.id === 'hname') { H().name = t.value.slice(0, 24) || ('Hus ' + (S.hi + 1)); save(); update(); return; }
+    if (t.dataset.hp) {
+      H().hp[t.dataset.hp] = t.type === 'checkbox' ? (t.checked ? 1 : 0) : parseNum(t.value);
+      save(); update(); return;
+    }
+    if (t.dataset.param) {
+      S.p[t.dataset.param] = parseNum(t.value);
+      save(); update(); return;
+    }
+    if (t.dataset.item) {
+      H().items[t.dataset.item][H().scen] = parseNum(t.value);
+      save(); update(); return;
+    }
+  });
+  $('own').addEventListener('change', function(e){ S.own = e.target.value === 'villa' ? 'villa' : 'br'; save(); update(); });
+  $('seg').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    H().scen = +b.dataset.s; save(); update();
+  });
+  $('sharedBox').addEventListener('toggle', function(){ S.openShared = $('sharedBox').open; save(); });
+
+  function selectHouse(i){
+    if (i === S.hi) return;
+    S.hi = i; buildCats(); save(); update();
+  }
+  $('hsel').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    selectHouse(+b.dataset.hi);
+  });
+  function cmpPick(e){
+    var row = e.target.closest('tr[data-hi]'); if (!row) return;
+    selectHouse(+row.dataset.hi);
+    $('hsel').scrollIntoView({block:'start'});
+  }
+  $('cmpTbl').addEventListener('click', cmpPick);
+  $('cmpTbl').addEventListener('keydown', function(e){ if (e.key === 'Enter') cmpPick(e); });
+
+  document.querySelector('.tabs').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    S.top = b.dataset.tab; save(); update(); window.scrollTo(0, 0);
+  });
+
+  var resetTimer = null;
+  $('reset').addEventListener('click', function(){
+    var btn = $('reset');
+    if (!resetTimer) {
+      btn.textContent = 'Tryck igen för att återställa allt';
+      resetTimer = setTimeout(function(){ resetTimer = null; btn.textContent = 'Återställ alla värden'; }, 4000);
+      return;
+    }
+    clearTimeout(resetTimer); resetTimer = null; btn.textContent = 'Återställ alla värden';
+    var top = S.top;
+    S = defaults(); S.top = top;
+    buildCats(); save(); update();
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>
