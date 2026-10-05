@@ -205,6 +205,7 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
       <div class="card" style="margin-top:8px"><table id="monthTbl"></table></div>
       <div id="monthNote"></div>
       <div id="compare"></div>
+      <button class="reset" id="houseReset" type="button">Nollställ den här kalkylen</button>
     </div>
 
     <h2>Jämförelse av alla kalkyler</h2>
@@ -219,7 +220,7 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
 <script>
 (function(){
   var KEY = 'huskalkyl-v1';
-  var VER = 2;
+  var VER = 3;
   var NH = 5;
   var SC = ['Låg','Rimlig','Hög'];
 
@@ -234,28 +235,28 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
 
   var CATS = [
     {id:'kop', name:'Tomt och köp', color:'#2B5C7A', items:[
-      {id:'tomt', name:'Tomt', v:[2000000,2000000,2000000]},
+      {id:'tomt', name:'Tomt', v:[0,0,0]},
       {id:'lagfart', name:'Lagfart', note:'Räknas automatiskt: 1,5 % av tomtpriset + 825 kr', auto:true},
       {id:'pantbrev', name:'Pantbrev', note:'Räknas automatiskt: 2 % av nya pantbrev + 375 kr', auto:true}
     ]},
     {id:'hus', name:'Hus', color:'#4F7F6A', items:[
-      {id:'hus', name:'Nyckelfärdigt hus', v:[2500000,2500000,2500000]},
-      {id:'tillval', name:'Tillval och prisjusteringar', note:'Kök, golv, värmepump, extra el m.m.', v:[0,100000,250000]},
-      {id:'vitvaror', name:'Vitvaror som inte ingår', v:[40000,80000,120000]}
+      {id:'hus', name:'Nyckelfärdigt hus', v:[0,0,0]},
+      {id:'tillval', name:'Tillval och prisjusteringar', note:'Kök, golv, värmepump, extra el m.m.', v:[0,0,0]},
+      {id:'vitvaror', name:'Vitvaror som inte ingår', v:[0,0,0]}
     ]},
     {id:'mark', name:'Mark och anslutningar', color:'#8A7A3E', items:[
-      {id:'markarbete', name:'Markarbeten och grund utöver avtal', note:'Berg, lera och sluttning driver kostnaden', v:[100000,250000,400000]},
-      {id:'va', name:'Vatten och avlopp', note:'Kommunalt ca 100–250 tkr, enskilt ca 150–300 tkr', v:[100000,200000,300000]},
-      {id:'elfiber', name:'El och fiber', v:[40000,90000,150000]},
-      {id:'uppfart', name:'Uppfart, dränering, utfyllnad', v:[50000,100000,150000]}
+      {id:'markarbete', name:'Markarbeten och grund utöver avtal', note:'Berg, lera och sluttning driver kostnaden', v:[0,0,0]},
+      {id:'va', name:'Vatten och avlopp', note:'Kommunalt ca 100–250 tkr, enskilt ca 150–300 tkr', v:[0,0,0]},
+      {id:'elfiber', name:'El och fiber', v:[0,0,0]},
+      {id:'uppfart', name:'Uppfart, dränering, utfyllnad', v:[0,0,0]}
     ]},
     {id:'myn', name:'Myndighet och projektering', color:'#6B5B8C', items:[
-      {id:'bygglov', name:'Bygglov, kontrollansvarig, kartor, utstakning', v:[60000,100000,150000]},
-      {id:'geoteknik', name:'Geoteknisk markundersökning', v:[0,20000,40000]},
-      {id:'lantmateri', name:'Lantmäteriförrättning', note:'Om tomten inte redan är avstyckad', v:[0,0,60000]}
+      {id:'bygglov', name:'Bygglov, kontrollansvarig, kartor, utstakning', v:[0,0,0]},
+      {id:'geoteknik', name:'Geoteknisk markundersökning', v:[0,0,0]},
+      {id:'lantmateri', name:'Lantmäteriförrättning', note:'Om tomten inte redan är avstyckad', v:[0,0,0]}
     ]},
     {id:'bygg', name:'Under byggtiden', color:'#3F8F9B', items:[
-      {id:'forsakring', name:'Byggfelsförsäkring och byggherreförsäkring', v:[20000,35000,50000]},
+      {id:'forsakring', name:'Byggfelsförsäkring och byggherreförsäkring', v:[0,0,0]},
       {id:'byggranta', name:'Ränta under byggtiden', note:'Räknas automatiskt från byggtid, ränta och kontantinsats', auto:true},
       {id:'dubbelt', name:'Dubbelt boende', note:'Räknas automatiskt: månader × nuvarande boende utan amortering, efter ränteavdrag', auto:true}
     ]},
@@ -266,11 +267,11 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
       {id:'staket', name:'Staket, häck, grind', v:[0,0,0]}
     ]},
     {id:'inflytt', name:'Inflytt', color:'#7C8C3A', items:[
-      {id:'belysning', name:'Belysning, gardinstänger, småfix', v:[30000,60000,100000]},
-      {id:'besiktning', name:'Besiktning och energideklaration', v:[10000,15000,20000]}
+      {id:'belysning', name:'Belysning, gardinstänger, småfix', v:[0,0,0]},
+      {id:'besiktning', name:'Besiktning och energideklaration', v:[0,0,0]}
     ]},
     {id:'buffert', name:'Buffert', color:'#7E8A96', items:[
-      {id:'buffert', name:'Oförutsett', note:'Ca 5–15 % av huspriset', v:[125000,250000,375000]}
+      {id:'buffert', name:'Oförutsett', note:'Ca 5–15 % av huspriset', v:[0,0,0]}
     ]}
   ];
 
@@ -278,13 +279,13 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
   var PARAMS = [
     {id:'brutto', label:'Hushållets bruttoinkomst per månad', unit:'kr', def:0, sec:'sharedInputs'},
     {id:'netto', label:'Hushållets nettoinkomst per månad', unit:'kr', def:0, sec:'sharedInputs'},
-    {id:'levnad', label:'Övriga levnadskostnader per månad', unit:'kr', def:17500, sec:'sharedInputs',
+    {id:'levnad', label:'Övriga levnadskostnader per månad', unit:'kr', def:0, sec:'sharedInputs',
       note:'Mat, bil, barn, avbetalningar på andra lån m.m.'},
     {id:'ovrskuld', label:'Övriga skulder', unit:'kr', def:0, sec:'sharedInputs',
       note:'Billån, CSN, privatlån. Ingår i skuldkvoten.'},
-    {id:'ranta', label:'Boränta på nytt lån', unit:'%', def:4.5, step:0.1, sec:'sharedInputs',
+    {id:'ranta', label:'Boränta på nytt lån', unit:'%', def:0, step:0.1, sec:'sharedInputs',
       note:'Används även för räntan under byggtiden'},
-    {id:'kalkylranta', label:'Bankens kalkylränta', unit:'%', def:7, step:0.1, sec:'sharedInputs'},
+    {id:'kalkylranta', label:'Bankens kalkylränta', unit:'%', def:0, step:0.1, sec:'sharedInputs'},
     {id:'sparande', label:'Övrigt sparande', unit:'kr', def:0, sec:'sharedInputs',
       note:'Läggs till behållningen från nuvarande boende'},
 
@@ -296,7 +297,7 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
     {id:'c_salj', label:'Uppskattat säljpris', unit:'kr', def:0, sec:'curBuy'},
 
     {id:'c_lan', label:'Kvarvarande lån', unit:'kr', def:0, sec:'curLoan'},
-    {id:'c_ranta', label:'Ränta', unit:'%', def:4.5, step:0.1, sec:'curLoan'},
+    {id:'c_ranta', label:'Ränta', unit:'%', def:0, step:0.1, sec:'curLoan'},
     {id:'c_amort', label:'Amortering per månad', unit:'kr', def:0, sec:'curLoan'},
 
     {id:'c_avgift', label:'Månadsavgift till föreningen', unit:'kr', def:0, sec:'curMonthIn', own:'br'},
@@ -305,7 +306,7 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
     {id:'c_drift', label:'Drift per månad', unit:'kr', def:0, sec:'curMonthIn',
       note:'El, värme, vatten, hemförsäkring och underhåll som inte ingår i avgiften'},
 
-    {id:'c_maklar', label:'Mäklararvode', unit:'%', def:2.5, step:0.1, sec:'curSaleIn', note:'Av säljpriset, inklusive moms'},
+    {id:'c_maklar', label:'Mäklararvode', unit:'%', def:0, step:0.1, sec:'curSaleIn', note:'Av säljpriset, inklusive moms'},
     {id:'c_ovrigt', label:'Homestyling, foto och annat vid försäljning', unit:'kr', def:0, sec:'curSaleIn',
       note:'Dras av från vinsten'},
     {id:'c_ranteskill', label:'Ränteskillnadsersättning', unit:'kr', def:0, sec:'curSaleIn',
@@ -322,15 +323,15 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
     {id:'useSale', label:'Använd potentiell kontantinsats', type:'check', def:0, sec:'finInputs',
       note:'Behållning från nuvarande boende plus sparande'},
     {id:'kontant', label:'Kontantinsats', unit:'kr', def:0, sec:'finInputs'},
-    {id:'varderng', label:'Bankens värdering av färdigt hus och tomt', unit:'kr', def:5000000, sec:'finInputs',
+    {id:'varderng', label:'Bankens värdering av färdigt hus och tomt', unit:'kr', def:0, sec:'finInputs',
       note:'Banken utgår från marknadsvärdet, inte byggkostnaden'},
-    {id:'byggtid', label:'Byggtid', unit:'mån', def:12, step:1, sec:'buildIn',
+    {id:'byggtid', label:'Byggtid', unit:'mån', def:0, step:1, sec:'buildIn',
       note:'Från tomtköp till inflytt'},
     {id:'pantbef', label:'Befintliga pantbrev på tomten', unit:'kr', def:0, sec:'buildIn',
       note:'Fråga säljaren eller kolla hos Lantmäteriet'},
     {id:'dubbelMan', label:'Månader med dubbelt boende', unit:'mån', def:0, step:1, sec:'buildIn',
       note:'Efter inflytt, innan nuvarande boende är sålt'},
-    {id:'drift', label:'Drift per månad', unit:'kr', def:6500, sec:'monthIn',
+    {id:'drift', label:'Drift per månad', unit:'kr', def:0, sec:'monthIn',
       note:'El, värme, vatten, sopor, försäkring, underhåll'},
     {id:'fastavg', label:'Fastighetsavgift per år', unit:'kr', def:0, sec:'monthIn',
       note:'Nybyggda småhus är avgiftsfria i 15 år'}
@@ -369,15 +370,12 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
         if (typeof saved.hi === 'number' && saved.hi >= 0 && saved.hi < NH) S.hi = saved.hi;
         if (saved.own === 'br' || saved.own === 'villa') S.own = saved.own;
         if (typeof saved.openShared === 'boolean') S.openShared = saved.openShared;
-        if (saved.p) Object.keys(S.p).forEach(function(k){ if (typeof saved.p[k] === 'number') S.p[k] = saved.p[k]; });
-        if (saved.houses && saved.houses.length) {
+        /* Version 3: alla värden nollställda en gång. Äldre sparade värden läses inte in. */
+        var keepData = saved.ver >= 3;
+        if (keepData && saved.p) Object.keys(S.p).forEach(function(k){ if (typeof saved.p[k] === 'number') S.p[k] = saved.p[k]; });
+        if (!keepData) { /* hoppa över */ }
+        else if (saved.houses && saved.houses.length) {
           for (var i = 0; i < NH; i++) if (saved.houses[i]) loadHouse(S.houses[i], saved.houses[i], saved.houses[i].hp);
-        } else if (saved.items) {
-          loadHouse(S.houses[0], {scen:saved.scen, open:saved.open, items:saved.items}, saved.p);
-        }
-        if (!saved.ver || saved.ver < 2) {
-          /* Version 1 räknade fastighetsavgift på nybygget och tillval i bufferten */
-          S.houses.forEach(function(h){ h.hp.fastavg = 0; });
         }
       }
     }
@@ -655,7 +653,7 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
     CATS.forEach(function(c){ c.items.forEach(function(it){
       if (!it.auto) { vals[it.id] = h.items[it.id][sc]; base += vals[it.id]; }
     }); });
-    vals.lagfart = Math.round(h.items.tomt[sc] * LAGFART_STAMP + LAGFART_AVG);
+    vals.lagfart = h.items.tomt[sc] > 0 ? Math.round(h.items.tomt[sc] * LAGFART_STAMP + LAGFART_AVG) : 0;
     vals.dubbelt = Math.round(cur.livingExAmort * hp.dubbelMan);
     base += vals.lagfart + vals.dubbelt;
     var plotCost = h.items.tomt[sc] + vals.lagfart;
@@ -690,7 +688,8 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
       subs[c.id] = s;
     });
 
-    var val = Math.max(1, hp.varderng);
+    var hasVal = hp.varderng > 0;
+    var val = hasVal ? hp.varderng : Math.max(1, total);
     var ltv = loan / val;
     var maxLoan = val * BOLANETAK;
     var income = Math.max(1, P.brutto * 12);
@@ -698,7 +697,7 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
     var amorPct = ltv > 0.7 ? 2 : (ltv > 0.5 ? 1 : 0);
     var m1 = monthly(h, loan, P.ranta, amorPct);
     var m2 = monthly(h, loan, P.kalkylranta, amorPct);
-    return {vals:vals, total:total, subs:subs, cash:cash, pot:pot, net:net, upp:upp, tax:tax, loan:loan,
+    return {hasVal:hasVal, vals:vals, total:total, subs:subs, cash:cash, pot:pot, net:net, upp:upp, tax:tax, loan:loan,
       ltv:ltv, maxLoan:maxLoan, dti:dti, amorPct:amorPct, m1:m1, m2:m2,
       rest1: P.netto - m1.after - P.levnad, rest2: P.netto - m2.after - P.levnad};
   }
@@ -781,7 +780,9 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
     }
     $('saleHint').innerHTML = hint;
 
-    var chk = r.loan > r.maxLoan
+    var chk = r.total <= 0 ? ''
+      : !r.hasVal ? '<div class="notice warn">Fyll i bankens värdering för att kontrollera bolånetaket. Tills dess räknas amorteringen mot totalkostnaden.</div>'
+      : r.loan > r.maxLoan
       ? '<div class="notice warn">Bolånetaket är 90 % av värderingen, alltså högst ' + fmt(r.maxLoan) +
         ' i lån. Lånebehovet är ' + fmt(r.loan) + ', så du behöver ca ' + fmt(r.loan - r.maxLoan) + ' mer i kontantinsats eller en högre värdering.</div>'
       : '<div class="notice ok">Lånet ryms inom bolånetaket på 90 % av värderingen (' + fmt(r.maxLoan) + ').</div>';
@@ -795,8 +796,8 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
       kv('Kontantinsats', fmt(r.cash), '', 'o_cash') +
       kv('Lånebehov', fmt(r.loan), 'strong', 'o_loan') +
       kv('Kontantinsats av totalkostnad', pct(r.total>0 ? r.cash/r.total : 0), '', 'o_cashpct') +
-      kv('Belåningsgrad mot värdering', pct(r.ltv), '', 'o_ltv') +
-      kv('Minsta kontantinsats (10 % av värderingen)', fmt(hp.varderng * (1 - BOLANETAK)), '', 'o_mincash') +
+      kv('Belåningsgrad mot värdering', r.hasVal ? pct(r.ltv) : '–', '', 'o_ltv') +
+      kv('Minsta kontantinsats (10 % av värderingen)', r.hasVal ? fmt(hp.varderng * (1 - BOLANETAK)) : '–', '', 'o_mincash') +
       kv('Skuldkvot (alla lån / årsinkomst)', P.brutto > 0 ? r.dti.toFixed(1).replace('.',',') : '–', '', 'o_dti') +
       kv('Amorteringskrav per år', r.amorPct + NB + '% av lånet', '', 'o_amort');
 
@@ -911,6 +912,7 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
       renderHouseSel();
     }
     updateHouse(cur);
+    if (!houseResetTimer) $('houseReset').textContent = houseResetLabel();
     updateCompare(cur);
     updateCur(cur);
   }
@@ -947,6 +949,7 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
 
   function selectHouse(i){
     if (i === S.hi) return;
+    if (houseResetTimer) { clearTimeout(houseResetTimer); houseResetTimer = null; }
     S.hi = i; buildCats(); save(); update();
   }
   $('hsel').addEventListener('click', function(e){
@@ -966,15 +969,30 @@ tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
     S.top = b.dataset.tab; save(); update(); window.scrollTo(0, 0);
   });
 
+  var houseResetTimer = null;
+  function houseResetLabel(){ return 'Nollställ ' + H().name; }
+  $('houseReset').addEventListener('click', function(){
+    var btn = $('houseReset');
+    if (!houseResetTimer) {
+      btn.textContent = 'Tryck igen för att nollställa ' + H().name;
+      houseResetTimer = setTimeout(function(){ houseResetTimer = null; btn.textContent = houseResetLabel(); }, 4000);
+      return;
+    }
+    clearTimeout(houseResetTimer); houseResetTimer = null;
+    S.houses[S.hi] = newHouse(S.hi);
+    buildCats(); save(); update();
+  });
+
   var resetTimer = null;
+  $('reset').textContent = 'Nollställ alla kalkyler och nuvarande boende';
   $('reset').addEventListener('click', function(){
     var btn = $('reset');
     if (!resetTimer) {
       btn.textContent = 'Tryck igen för att återställa allt';
-      resetTimer = setTimeout(function(){ resetTimer = null; btn.textContent = 'Återställ alla värden'; }, 4000);
+      resetTimer = setTimeout(function(){ resetTimer = null; btn.textContent = 'Nollställ alla kalkyler och nuvarande boende'; }, 4000);
       return;
     }
-    clearTimeout(resetTimer); resetTimer = null; btn.textContent = 'Återställ alla värden';
+    clearTimeout(resetTimer); resetTimer = null; btn.textContent = 'Nollställ alla kalkyler och nuvarande boende';
     var top = S.top;
     S = defaults(); S.top = top;
     buildCats(); save(); update();
