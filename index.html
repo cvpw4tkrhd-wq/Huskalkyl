@@ -89,6 +89,20 @@ tr + tr td{border-top:1px solid var(--line)}
 td.total{font-weight:700}
 .foot{color:var(--muted);font-size:.82rem;margin-top:22px}
 .reset{margin-top:14px;background:transparent;border:1px solid var(--line);color:var(--muted);font:inherit;padding:9px 14px;border-radius:8px;cursor:pointer}
+/* informationsrutor */
+.lab{min-width:0}
+.ib{background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;text-align:left;cursor:pointer;line-height:inherit}
+.ib .i{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;
+  border:1.5px solid var(--muted);color:var(--muted);font:700 10px/1 Georgia,"Times New Roman",serif;font-style:italic;
+  margin-left:6px;vertical-align:1px;box-sizing:border-box}
+.ib[aria-expanded="true"] .i{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.ib:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.info{grid-column:1/-1;flex-basis:100%;background:var(--bg);border-left:3px solid var(--accent);border-radius:6px;
+  padding:9px 11px;font-size:.86rem;line-height:1.45;color:var(--ink);font-weight:400;text-align:left}
+.kv{flex-wrap:wrap}
+.kv .info{margin-top:4px}
+.hero .info{margin-top:8px}
+tr.inforow td{border-top:0 !important;padding:0 4px 9px;text-align:left}
 @media (prefers-reduced-motion:reduce){details.cat summary::after{transition:none}}
 </style>
 </head>
@@ -104,7 +118,8 @@ td.total{font-weight:700}
   <!-- ===== Nivå 1: Nuvarande boende ===== -->
   <div id="tab-cur" role="tabpanel" aria-labelledby="tabBtn-cur" hidden>
     <section class="hero" aria-label="Behållning efter försäljning">
-      <div class="lbl">Behållning efter försäljning</div>
+      <div class="lbl"><button type="button" class="ib" data-info="curnet" aria-expanded="false">Behållning efter försäljning<span class="i" aria-hidden="true">i</span></button></div>
+      <div class="info" data-infobox="curnet" hidden></div>
       <div class="big" id="curNet">0 kr</div>
       <div class="sub" id="curNetSub"></div>
     </section>
@@ -153,7 +168,8 @@ td.total{font-weight:700}
           <button data-s="1" aria-pressed="true">Rimlig</button>
           <button data-s="2" aria-pressed="false">Hög</button>
         </div>
-        <div class="lbl" id="totalLbl">Totalkostnad</div>
+        <div class="lbl"><button type="button" class="ib" data-info="total" aria-expanded="false"><span id="totalLbl">Totalkostnad</span><span class="i" aria-hidden="true">i</span></button></div>
+        <div class="info" data-infobox="total" hidden></div>
         <div class="big" id="total">0 kr</div>
         <div class="sub" id="totalSub"></div>
         <div class="bar" id="bar" aria-hidden="true"></div>
@@ -408,8 +424,129 @@ td.total{font-weight:700}
   function pct(n){ return (n*100).toFixed(0) + NB + '%'; }
   function fnum(n){ return String(n).replace('.', ','); }
   function esc(t){ return String(t).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-  function kv(a,b,cls){ return '<div class="kv'+(cls?' '+cls:'')+'"><span>'+a+'</span><b>'+b+'</b></div>'; }
-  function tr(a,b,c,cls){ var t = cls ? ' class="'+cls+'"' : ''; return '<tr><td'+t+'>'+a+'</td><td'+t+'>'+b+'</td><td'+t+'>'+c+'</td></tr>'; }
+
+  var INFO = {
+    /* tomt och köp */
+    tomt:'Priset för tomten enligt köpekontraktet. Lagfarten räknas på det här beloppet, eller på taxeringsvärdet om det är högre.',
+    lagfart:'Avgift till Lantmäteriet för att bli registrerad som ägare: 1,5 % av köpeskillingen plus 825 kr i expeditionsavgift. Betalas när tomten köps.',
+    pantbrev:'Banken kräver pantbrev som säkerhet för lånet. Nya pantbrev kostar 2 % av beloppet plus 375 kr. Pantbrev som redan finns på tomten kan användas utan kostnad. Räknas automatiskt från lånebehovet.',
+    /* hus */
+    hus:'Fast pris från husleverantören för ett nyckelfärdigt hus. Kontrollera i avtalet vad som inte ingår. Grund, markarbeten, anslutningar, vitvaror och tillval är vanliga undantag.',
+    tillval:'Val utöver standard, till exempel kök, golv, kakel, värmepump, fönster eller extra eluttag. Prisjusteringar enligt index kan också tillkomma om avtalet tillåter det.',
+    vitvaror:'Kyl, frys, spis, ugn, diskmaskin, tvättmaskin och torktumlare om de inte ingår i huspriset.',
+    /* mark */
+    markarbete:'Schaktning, sprängning, pålning och utfyllnad som behövs innan grunden kan gjutas. Berg, lera och sluttande tomt ger störst kostnad.',
+    va:'Anslutningsavgift för kommunalt vatten och avlopp enligt kommunens VA-taxa, eller kostnad för egen brunn och enskilt avlopp.',
+    elfiber:'Anslutning till elnätet, som beror på säkringsstorlek och avstånd till nätet, samt fiberanslutning. Byggström kan också räknas hit.',
+    uppfart:'Uppfart, grus, dränering runt huset och utfyllnad som inte ingår i husavtalet.',
+    /* myndighet */
+    bygglov:'Bygglovsavgift till kommunen, nybyggnadskarta, utstakning, lägeskontroll och certifierad kontrollansvarig.',
+    geoteknik:'Undersökning av markens bärighet. Krävs ofta på lera eller osäker mark och avgör vilken grund som behövs.',
+    lantmateri:'Avstyckning eller fastighetsreglering hos Lantmäteriet om tomten inte redan är en egen fastighet.',
+    /* byggtiden */
+    forsakring:'Vid nybyggnad av småhus krävs normalt färdigställandeskydd, i form av byggfelsförsäkring och färdigställandegaranti. Byggherreförsäkring skyddar dig under bygget. Ofta ingår en del i husleverantörens pris, så kontrollera avtalet.',
+    byggranta:'Ränta på tomt- och bygglån tills huset är klart. Tomtlånet räknas för hela byggtiden. Bygglånet betalas ut i takt med bygget och räknas därför i snitt för halva tiden. Om behållningen från försäljningen används finns bara sparandet under byggtiden, och resten lånas.',
+    dubbelt:'Kostnaden för att behålla nuvarande bostad efter inflytt tills den är såld: ränta efter ränteavdrag, avgift och drift. Amortering räknas inte, eftersom den är sparande.',
+    /* utemiljö */
+    altan:'Altan, trädäck eller stenlagd uteplats.',
+    tradgard:'Gräsmatta, plantering, jord och grus på tomten.',
+    carport:'Carport, garage eller förråd. Kan kräva bygglov eller anmälan.',
+    staket:'Staket, häck, grindar och annan tomtavgränsning.',
+    /* inflytt */
+    belysning:'Lampor, armaturer, gardinstänger, krokar och annat smått som behövs för att flytta in.',
+    besiktning:'Slutbesiktning, egen besiktningsman om du vill ha en, och energideklaration.',
+    /* buffert */
+    buffert:'Pengar för det som inte går att förutse. Vanligt är 5–15 % av huspriset. Det är bättre att ha för stor buffert än för liten.',
+
+    /* gemensamt */
+    brutto:'Hushållets sammanlagda lön före skatt per månad. Används för skuldkvoten.',
+    netto:'Hushållets sammanlagda inkomst efter skatt per månad. Används för att räkna vad som blir kvar varje månad.',
+    levnad:'Allt utom boendet: mat, kläder, bil, barn, försäkringar och avbetalningar. Konsumentverket har riktvärden om du vill jämföra.',
+    ovrskuld:'Skulder utöver bolånet, till exempel billån, CSN och privatlån. Banken räknar in dem i skuldkvoten.',
+    ranta:'Den ränta du räknar med på det nya bolånet. Används för månadskostnaden och för räntan under byggtiden.',
+    kalkylranta:'Banken prövar om ekonomin håller vid en högre ränta, ofta runt 6–7 %. Visar hur det ser ut om räntorna stiger.',
+    sparande:'Pengar utöver behållningen från nuvarande boende som du kan använda som kontantinsats.',
+
+    /* nuvarande boende */
+    c_kop:'Priset du betalade för din nuvarande bostad. Ingår i omkostnadsbeloppet, som minskar den skattepliktiga vinsten.',
+    c_kopkost:'Utgifter vid köpet som får räknas in i omkostnadsbeloppet, till exempel lagfart för en villa. Kostnad för pantbrev får inte räknas in.',
+    c_forb:'Förbättringar som höjt standarden, till exempel nytt kök eller tillbyggnad. Räknas för år då du lagt minst 5 000 kr. Reparationer och underhåll räknas bara för de senaste fem åren. Spara kvitton.',
+    c_salj:'Priset du tror att bostaden kan säljas för. En mäklarvärdering ger en bra fingervisning.',
+    c_lan:'Det som återstår att betala på bolånen. Lånen löses med pengarna från försäljningen.',
+    c_ranta:'Räntan du betalar på bolånet i dag.',
+    c_amort:'Det du amorterar varje månad. Amortering minskar lånet och är ett sparande, inte en kostnad.',
+    c_avgift:'Månadsavgiften till bostadsrättsföreningen.',
+    c_fastavg:'Kommunal fastighetsavgift per år: 0,75 % av taxeringsvärdet, högst 10 425 kr för 2026.',
+    c_drift:'Övriga löpande kostnader som el, värme, vatten, hemförsäkring och underhåll.',
+    c_maklar:'Mäklarens provision i procent av säljpriset. Har du fast arvode, räkna om det till procent av säljpriset.',
+    c_ovrigt:'Kostnader för att sälja, till exempel homestyling, fotografering, annonsering och besiktning. Dras av från vinsten.',
+    c_ranteskill:'Ersättning till banken om du löser ett lån med bunden ränta före bindningstidens slut. Får dras av som ränteutgift i deklarationen, inte från vinsten.',
+    c_flytt:'Flyttfirma, flyttstädning och magasinering. Minskar behållningen men får inte dras av från vinsten.',
+    c_skatt:'Skatten på vinst vid försäljning av privatbostad är 22 % av vinsten.',
+    c_uppskov:'Med uppskov skjuter du upp vinstskatten när du köper en ny bostad. Det är räntefritt, gäller upp till 3 000 000 kr i vinst per såld bostad och kräver minst 50 000 kr i vinst. Du måste flytta in i den nya bostaden senast den 2 maj andra året efter försäljningen. Skatten betalas när du säljer nästa bostad, om du inte gör nytt uppskov.',
+
+    /* per hus */
+    useSale:'Ersätter kontantinsatsen du har skrivit in med behållningen från nuvarande boende plus sparandet.',
+    kontant:'Egna pengar som sätts in i köpet. Minst 10 % av bankens värdering krävs.',
+    varderng:'Bankens bedömning av vad färdigt hus och tomt är värt. Banken lånar högst 90 % av värderingen, även om byggkostnaden är högre.',
+    byggtid:'Tid från tomtköp till inflytt. Längre byggtid ger mer ränta under byggtiden.',
+    pantbef:'Pantbrev som redan finns på tomten. De kan användas som säkerhet utan kostnad, så du behöver köpa färre nya. Obebyggda tomter har ofta inga.',
+    dubbelMan:'Antal månader du betalar för båda bostäderna efter inflytt, innan den gamla är såld.',
+    drift:'Löpande kostnader för huset: el och värme, vatten och avlopp, sophämtning, villaförsäkring och underhåll.',
+    fastavg:'Kommunal fastighetsavgift. Nybyggda småhus är avgiftsfria de första 15 åren, därefter 0,75 % av taxeringsvärdet upp till ett tak.',
+
+    /* resultat */
+    total:'Summan av alla kostnader i kalkylen, inklusive automatiska poster som lagfart, pantbrev, ränta under byggtiden och dubbelt boende.',
+    curnet:'Det som blir kvar när bostaden är såld och lån, försäljningskostnader och skatt är betalda.',
+    pot_net:'Behållningen från försäljningen av nuvarande boende. Är det nya huset billigare än säljpriset minskar uppskovet, och då kan behållningen bli lägre i den här kalkylen än på fliken Nuvarande boende.',
+    pot_total:'Behållning plus övrigt sparande. Det är vad du kan sätta in som kontantinsats.',
+    pot_def:'Vinstskatt som skjuts upp genom uppskov. Pengarna kan användas nu, men skatten ska betalas när du säljer det nya huset om du inte gör nytt uppskov.',
+    o_cash:'Kontantinsatsen som används i den här kalkylen.',
+    o_loan:'Totalkostnaden minus kontantinsatsen. Det är vad du behöver låna.',
+    o_cashpct:'Hur stor del av totalkostnaden du betalar med egna pengar.',
+    o_ltv:'Lånet delat med bankens värdering. Får vara högst 90 % och styr hur mycket du måste amortera.',
+    o_mincash:'Lägsta kontantinsats enligt bolånetaket, 10 % av värderingen. Är kostnaden högre än värderingen måste skillnaden också betalas med egna pengar.',
+    o_dti:'Alla skulder delat med hushållets bruttoinkomst per år. Många banker är restriktiva över ca 5,5.',
+    o_amort:'Belåningsgrad över 70 % ger 2 % amortering per år, 50–70 % ger 1 % och under 50 % inget krav.',
+    m_interest:'Lånet gånger räntan, delat med 12.',
+    m_amort:'Lånet gånger amorteringskravet, delat med 12. Amortering är sparande men belastar ändå månadsbudgeten.',
+    m_run:'Drift per månad plus fastighetsavgiften per år delat med 12.',
+    m_total:'Ränta, amortering, drift och fastighetsavgift tillsammans.',
+    m_ded:'Du får tillbaka 30 % av räntan upp till 100 000 kr ränta per år och 21 % av räntan över det. Avdraget görs i deklarationen eller via jämkning.',
+    m_after:'Boende totalt minus ränteavdraget. Det är den faktiska månadsbelastningen.',
+    m_rest:'Nettoinkomst minus boende efter ränteavdrag och levnadskostnader. Bankens kolumn visar läget med kalkylräntan.',
+    cmp_cur:'Nuvarande boende per månad efter ränteavdrag, inklusive amortering.',
+    cmp_new:'Det nya huset per månad efter ränteavdrag, inklusive amortering, med din ränta.',
+    cmp_diff:'Hur mycket mer eller mindre du betalar per månad i det nya huset jämfört med i dag.',
+    cm_fee:'Månadsavgiften för en bostadsrätt eller fastighetsavgiften per år delat med 12 för en villa.',
+    cm_total:'Ränta, amortering, avgift och drift tillsammans.',
+    cm_exam:'Kostnaden utan amortering, eftersom amortering är sparande. Används för att räkna kostnaden för dubbelt boende.',
+    s_basis:'Omkostnadsbeloppet: köpepris, utgifter vid köpet och förbättringar. Dras av från säljpriset när vinsten räknas ut.',
+    s_gain:'Säljpris minus försäljningskostnader och omkostnadsbelopp. Det är vinsten som beskattas. Vid förlust får du en skattereduktion.',
+    s_upp:'Den del av vinsten som får uppskov och därför inte beskattas nu.',
+    s_tax:'22 % av den del av vinsten som inte får uppskov.',
+    s_loss:'Halva förlusten får dras av mot kapitalinkomster, vilket ger en skattereduktion på ca 15 % av förlusten.'
+  };
+  var ALIAS = {pot_spar:'sparande', o_total:'total', s_net:'curnet', s_salj:'c_salj', s_maklar:'c_maklar', s_ovr:'c_ovrigt',
+    s_def:'pot_def', s_lan:'c_lan', s_rsk:'c_ranteskill', s_flytt:'c_flytt', cm_interest:'m_interest', cm_amort:'m_amort',
+    cm_drift:'c_drift', cm_ded:'m_ded', cm_after:'m_after'};
+  function infoText(key){
+    var base = key.replace(/^(it|p|hp)_/, '');
+    return INFO[key] || INFO[ALIAS[key]] || INFO[base] || '';
+  }
+  var OPEN = {};
+  function ibtn(text, key){
+    if (!infoText(key)) return text;
+    return '<button type="button" class="ib" data-info="'+key+'" aria-expanded="'+(!!OPEN[key])+'">'+text+'<span class="i" aria-hidden="true">i</span></button>';
+  }
+  function ibox(key, tag){
+    var t = infoText(key); if (!t) return '';
+    var hid = OPEN[key] ? '' : ' hidden';
+    if (tag === 'tr') return '<tr class="inforow" data-infobox="'+key+'"'+hid+'><td colspan="3"><div class="info">'+t+'</div></td></tr>';
+    return '<div class="info" data-infobox="'+key+'"'+hid+'>'+t+'</div>';
+  }
+  function kv(a,b,cls,key){ return '<div class="kv'+(cls?' '+cls:'')+'"><span>'+(key?ibtn(a,key):a)+'</span><b>'+b+'</b>'+(key?ibox(key):'')+'</div>'; }
+  function tr(a,b,c,cls,key){ var t = cls ? ' class="'+cls+'"' : ''; return '<tr><td'+t+'>'+(key?ibtn(a,key):a)+'</td><td'+t+'>'+b+'</td><td'+t+'>'+c+'</td></tr>'+(key?ibox(key,'tr'):''); }
   function neg(n){ return Math.round(Math.abs(n)) === 0 ? fmt(0) : '\u2212' + fmt(Math.abs(n)); }
 
   /* Ränteavdrag: 30 % upp till 100 000 kr ränta per år, 21 % över */
@@ -427,8 +564,9 @@ td.total{font-weight:700}
         '<summary><i style="background:'+c.color+'"></i><span class="nm">'+c.name+'</span><span class="sum" id="sub-'+c.id+'"></span></summary>' +
         '<div class="items">';
       c.items.forEach(function(it){
-        html += '<div class="row"><label for="it-'+it.id+'">'+it.name+(it.note?'<small>'+it.note+'</small>':'')+'</label>' +
-          '<input type="text" inputmode="numeric" autocomplete="off" data-num="1" id="it-'+it.id+'"'+(it.auto?' readonly tabindex="-1"':' data-item="'+it.id+'"')+'></div>';
+        html += '<div class="row"><div class="lab">'+ibtn(it.name,'it_'+it.id)+(it.note?'<small>'+it.note+'</small>':'')+'</div>' +
+          '<input type="text" inputmode="numeric" autocomplete="off" data-num="1" id="it-'+it.id+'" aria-label="'+it.name+'"'+(it.auto?' readonly tabindex="-1"':' data-item="'+it.id+'"')+'>' +
+          ibox('it_'+it.id)+'</div>';
       });
       html += '</div></details>';
     });
@@ -441,11 +579,13 @@ td.total{font-weight:700}
 
   function paramRow(p, prefix, attr){
     var id = prefix + p.id;
-    var lab = '<label for="'+id+'">'+p.label+(p.unit && p.unit !== 'kr' ? ' ('+p.unit+')' : '')+(p.note?'<small>'+p.note+'</small>':'')+'</label>';
+    var key = prefix.replace('-', '_') + p.id;
+    var text = p.label + (p.unit && p.unit !== 'kr' ? ' ('+p.unit+')' : '');
+    var lab = '<div class="lab">'+ibtn(text, key)+(p.note?'<small>'+p.note+'</small>':'')+'</div>';
     var inp = p.type === 'check'
-      ? '<input type="checkbox" id="'+id+'" '+attr+'="'+p.id+'">'
-      : '<input type="text" inputmode="'+(p.unit==='%'?'decimal':'numeric')+'" autocomplete="off" data-num="1"'+(p.unit==='%'?' data-dec="1"':'')+' id="'+id+'" '+attr+'="'+p.id+'">';
-    return '<div class="row" id="row-'+id+'">'+lab+inp+'</div>';
+      ? '<input type="checkbox" id="'+id+'" '+attr+'="'+p.id+'" aria-label="'+p.label+'">'
+      : '<input type="text" inputmode="'+(p.unit==='%'?'decimal':'numeric')+'" autocomplete="off" data-num="1"'+(p.unit==='%'?' data-dec="1"':'')+' id="'+id+'" '+attr+'="'+p.id+'" aria-label="'+p.label+'">';
+    return '<div class="row" id="row-'+id+'">'+lab+inp+ibox(key)+'</div>';
   }
   function buildParams(){
     var groups = {};
@@ -613,10 +753,10 @@ td.total{font-weight:700}
     syncInputs(cur, h, r);
 
     var potHtml =
-      kv('Behållning från nuvarande boende', fmt(Math.max(0, r.net))) +
-      kv('Övrigt sparande', fmt(P.sparande)) +
-      kv('Potentiell kontantinsats', fmt(r.pot), 'strong');
-    if (r.upp > 0) potHtml += kv('Varav uppskjuten vinstskatt', fmt(r.upp * P.c_skatt / 100));
+      kv('Behållning från nuvarande boende', fmt(Math.max(0, r.net)), '', 'pot_net') +
+      kv('Övrigt sparande', fmt(P.sparande), '', 'pot_spar') +
+      kv('Potentiell kontantinsats', fmt(r.pot), 'strong', 'pot_total');
+    if (r.upp > 0) potHtml += kv('Varav uppskjuten vinstskatt', fmt(r.upp * P.c_skatt / 100), '', 'pot_def');
     $('potCard').innerHTML = potHtml;
 
     var hint = '';
@@ -642,24 +782,24 @@ td.total{font-weight:700}
     $('check').innerHTML = chk;
 
     $('finOut').innerHTML =
-      kv('Totalkostnad', fmt(r.total)) +
-      kv('Kontantinsats', fmt(r.cash)) +
-      kv('Lånebehov', fmt(r.loan), 'strong') +
-      kv('Kontantinsats av totalkostnad', pct(r.total>0 ? r.cash/r.total : 0)) +
-      kv('Belåningsgrad mot värdering', pct(r.ltv)) +
-      kv('Minsta kontantinsats (10 % av värderingen)', fmt(hp.varderng * (1 - BOLANETAK))) +
-      kv('Skuldkvot (alla lån / årsinkomst)', P.brutto > 0 ? r.dti.toFixed(1).replace('.',',') : '–') +
-      kv('Amorteringskrav per år', r.amorPct + NB + '% av lånet');
+      kv('Totalkostnad', fmt(r.total), '', 'o_total') +
+      kv('Kontantinsats', fmt(r.cash), '', 'o_cash') +
+      kv('Lånebehov', fmt(r.loan), 'strong', 'o_loan') +
+      kv('Kontantinsats av totalkostnad', pct(r.total>0 ? r.cash/r.total : 0), '', 'o_cashpct') +
+      kv('Belåningsgrad mot värdering', pct(r.ltv), '', 'o_ltv') +
+      kv('Minsta kontantinsats (10 % av värderingen)', fmt(hp.varderng * (1 - BOLANETAK)), '', 'o_mincash') +
+      kv('Skuldkvot (alla lån / årsinkomst)', P.brutto > 0 ? r.dti.toFixed(1).replace('.',',') : '–', '', 'o_dti') +
+      kv('Amorteringskrav per år', r.amorPct + NB + '% av lånet', '', 'o_amort');
 
     $('monthTbl').innerHTML =
       '<tr><th></th><th>Din ränta ('+fnum(P.ranta)+' %)</th><th>Bankens ('+fnum(P.kalkylranta)+' %)</th></tr>' +
-      tr('Ränta', fmt(r.m1.interest), fmt(r.m2.interest)) +
-      tr('Amortering', fmt(r.m1.amort), fmt(r.m2.amort)) +
-      tr('Drift och fastighetsavgift', fmt(r.m1.run), fmt(r.m2.run)) +
-      tr('Boende totalt', fmt(r.m1.total), fmt(r.m2.total), 'total') +
-      tr('Ränteavdrag', neg(r.m1.ded), neg(r.m2.ded)) +
-      tr('Efter ränteavdrag', fmt(r.m1.after), fmt(r.m2.after), 'total') +
-      tr('Kvar efter levnadskostnader', fmt(r.rest1), fmt(r.rest2));
+      tr('Ränta', fmt(r.m1.interest), fmt(r.m2.interest), '', 'm_interest') +
+      tr('Amortering', fmt(r.m1.amort), fmt(r.m2.amort), '', 'm_amort') +
+      tr('Drift och fastighetsavgift', fmt(r.m1.run), fmt(r.m2.run), '', 'm_run') +
+      tr('Boende totalt', fmt(r.m1.total), fmt(r.m2.total), 'total', 'm_total') +
+      tr('Ränteavdrag', neg(r.m1.ded), neg(r.m2.ded), '', 'm_ded') +
+      tr('Efter ränteavdrag', fmt(r.m1.after), fmt(r.m2.after), 'total', 'm_after') +
+      tr('Kvar efter levnadskostnader', fmt(r.rest1), fmt(r.rest2), '', 'm_rest');
     var note = '';
     if (P.netto <= 0) {
       note = '<div class="notice warn">Fyll i hushållets nettoinkomst under Gemensamt för alla hus för att se vad som blir kvar.</div>';
@@ -674,9 +814,9 @@ td.total{font-weight:700}
       var curAfter = cur.total - cur.dedM;
       var diff = r.m1.after - curAfter;
       $('compare').innerHTML = '<h2>Jämfört med nuvarande boende</h2><div class="card">' +
-        kv('Nuvarande boende per månad', fmt(curAfter)) +
-        kv(esc(h.name) + ' per månad', fmt(r.m1.after)) +
-        kv('Skillnad per månad', (diff >= 0 ? '+' : '') + fmt(diff), 'strong') +
+        kv('Nuvarande boende per månad', fmt(curAfter), '', 'cmp_cur') +
+        kv(esc(h.name) + ' per månad', fmt(r.m1.after), '', 'cmp_new') +
+        kv('Skillnad per månad', (diff >= 0 ? '+' : '') + fmt(diff), 'strong', 'cmp_diff') +
         '</div><p class="foot">Båda siffrorna är inklusive amortering och efter ränteavdrag.</p>';
     } else {
       $('compare').innerHTML = '';
@@ -701,31 +841,31 @@ td.total{font-weight:700}
       ? '<div class="notice warn">Fyll i köpepris, säljpris och lån så räknas boendekostnad, vinstskatt och behållning ut. Behållningen används som potentiell kontantinsats i alla fem husen.</div>' : '';
 
     $('curMonthOut').innerHTML =
-      kv('Ränta', fmt(cur.interestM)) +
-      kv('Amortering', fmt(cur.amortM)) +
-      kv(cur.br ? 'Månadsavgift' : 'Fastighetsavgift', fmt(cur.feeM)) +
-      kv('Drift', fmt(cur.runM)) +
-      kv('Boende totalt per månad', fmt(cur.total), 'strong') +
-      kv('Ränteavdrag (30 % upp till 100 000 kr ränta per år)', neg(cur.dedM)) +
-      kv('Totalt efter ränteavdrag', fmt(cur.total - cur.dedM), 'strong') +
-      kv('Utan amortering', fmt(cur.livingExAmort));
+      kv('Ränta', fmt(cur.interestM), '', 'cm_interest') +
+      kv('Amortering', fmt(cur.amortM), '', 'cm_amort') +
+      kv(cur.br ? 'Månadsavgift' : 'Fastighetsavgift', fmt(cur.feeM), '', 'cm_fee') +
+      kv('Drift', fmt(cur.runM), '', 'cm_drift') +
+      kv('Boende totalt per månad', fmt(cur.total), 'strong', 'cm_total') +
+      kv('Ränteavdrag (30 % upp till 100 000 kr ränta per år)', neg(cur.dedM), '', 'cm_ded') +
+      kv('Totalt efter ränteavdrag', fmt(cur.total - cur.dedM), 'strong', 'cm_after') +
+      kv('Utan amortering', fmt(cur.livingExAmort), '', 'cm_exam');
 
     var gainLabel = cur.gain >= 0 ? 'Vinst' : 'Förlust';
     var html =
-      kv('Säljpris', fmt(P.c_salj)) +
-      kv('Mäklararvode', neg(cur.broker)) +
-      kv('Homestyling, foto och annat', neg(P.c_ovrigt)) +
-      kv('Köpepris, utgifter vid köpet och förbättringar', neg(cur.basis)) +
-      kv(gainLabel, fmt(Math.abs(cur.gain)), 'strong');
-    if (cur.upp > 0) html += kv('Uppskov (skjuts upp)', fmt(cur.upp));
-    html += kv('Vinstskatt att betala (' + fnum(P.c_skatt) + ' %)', neg(cur.tax));
-    if (cur.upp > 0) html += kv('Uppskjuten skatt, räntefri', fmt(cur.deferred));
-    if (cur.gain < 0) html += kv('Skattereduktion vid förlust (ca)', '+' + fmt(cur.lossRelief));
+      kv('Säljpris', fmt(P.c_salj), '', 's_salj') +
+      kv('Mäklararvode', neg(cur.broker), '', 's_maklar') +
+      kv('Homestyling, foto och annat', neg(P.c_ovrigt), '', 's_ovr') +
+      kv('Köpepris, utgifter vid köpet och förbättringar', neg(cur.basis), '', 's_basis') +
+      kv(gainLabel, fmt(Math.abs(cur.gain)), 'strong', 's_gain');
+    if (cur.upp > 0) html += kv('Uppskov (skjuts upp)', fmt(cur.upp), '', 's_upp');
+    html += kv('Vinstskatt att betala (' + fnum(P.c_skatt) + ' %)', neg(cur.tax), '', 's_tax');
+    if (cur.upp > 0) html += kv('Uppskjuten skatt, räntefri', fmt(cur.deferred), '', 's_def');
+    if (cur.gain < 0) html += kv('Skattereduktion vid förlust (ca)', '+' + fmt(cur.lossRelief), '', 's_loss');
     html +=
-      kv('Kvarvarande lån', neg(P.c_lan)) +
-      kv('Ränteskillnadsersättning', neg(P.c_ranteskill)) +
-      kv('Flytt och städ', neg(P.c_flytt)) +
-      kv('Behållning efter försäljning', fmt(cur.net), 'strong');
+      kv('Kvarvarande lån', neg(P.c_lan), '', 's_lan') +
+      kv('Ränteskillnadsersättning', neg(P.c_ranteskill), '', 's_rsk') +
+      kv('Flytt och städ', neg(P.c_flytt), '', 's_flytt') +
+      kv('Behållning efter försäljning', fmt(cur.net), 'strong', 's_net');
     $('curSaleOut').innerHTML = html;
 
     var notes = '';
@@ -768,6 +908,7 @@ td.total{font-weight:700}
 
   /* ---------- händelser ---------- */
   buildCats(); buildParams();
+  document.querySelectorAll('.hero .info').forEach(function(x){ x.textContent = infoText(x.dataset.infobox); });
 
   document.addEventListener('input', function(e){
     var t = e.target;
@@ -778,6 +919,15 @@ td.total{font-weight:700}
     if (t.dataset.hp) { H().hp[t.dataset.hp] = v; save(); update(); return; }
     if (t.dataset.param) { S.p[t.dataset.param] = v; save(); update(); return; }
     if (t.dataset.item) { H().items[t.dataset.item][H().scen] = v; save(); update(); return; }
+  });
+  document.addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('.ib') : null;
+    if (!b) return;
+    e.preventDefault();
+    var key = b.dataset.info;
+    OPEN[key] = !OPEN[key];
+    document.querySelectorAll('[data-infobox="'+key+'"]').forEach(function(x){ x.hidden = !OPEN[key]; });
+    document.querySelectorAll('.ib[data-info="'+key+'"]').forEach(function(x){ x.setAttribute('aria-expanded', String(!!OPEN[key])); });
   });
   $('own').addEventListener('change', function(e){ S.own = e.target.value === 'villa' ? 'villa' : 'br'; save(); update(); });
   $('seg').addEventListener('click', function(e){
